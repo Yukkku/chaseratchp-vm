@@ -737,6 +737,7 @@ class VirtualMachine extends EventEmitter {
                         log.error(e);
                     }
                 }
+                extensions.extensionIDs.add('chaser');
                 return this.installTargets(targets, extensions, true);
             });
     }
