@@ -1,8 +1,8 @@
-const BlockType = require('../../extension-support/block-type');
-const ArgumentType = require('../../extension-support/argument-type');
-const formatMessage = require('format-message');
+import BlockType from '../../extension-support/block-type';
+import ArgumentType from '../../extension-support/argument-type';
+import formatMessage from 'format-message';
 
-module.exports = class CHaser {
+export class CHaser {
     getInfo () {
         const i18n = (() => {
             const loc = formatMessage.setup().locale;
