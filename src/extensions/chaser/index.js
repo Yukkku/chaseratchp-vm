@@ -2,7 +2,140 @@
 
 import BlockType from '../../extension-support/block-type';
 import ArgumentType from '../../extension-support/argument-type';
+import Cast from '../../util/cast';
 import formatMessage from 'format-message';
+
+/**
+ * @typedef {Readonly<{
+ *   close: () => void,
+ *   send: (command: string) => Promise<string | null>,
+ *   isMyturn: boolean,
+ *   isClosed: boolean,
+ *   onClose: (listener: () => unknown) => void,
+ *   offClose: (listener: () => unknown) => void,
+ *   onMyturn: (listener: (info: string) => unknown) => void,
+ *   offMyturn: (listener: (info: string) => unknown) => void,
+ * }>} Session
+ */
+
+const createCHaserSession = (() => {
+    /**
+     * @type {Readonly<{
+     *   connect: (host: string, port: number, name: string) => Promise<string | null>,
+     *   send: (sessionid: string, command: string) => void,
+     *   close: (sessionid: string) => void,
+     *   onClose: (listener: (sessionid: string) => unknown) => void,
+     *   onMyturn: (listener: (sessionid: string, info: string) => unknown) => void,
+     *   onTurnend: (listener: (sessionid: string, info: string) => unknown) => void,
+     * }>}
+     */
+    // @ts-ignore
+    const chaserClientPreload = window.chaserClientPreload;
+
+    /** @type {Map<string, [() => void, (info: string) => void, (info: string) => void]>} */
+    const sessions = new Map();
+
+    chaserClientPreload.onClose((sessionid) => {
+        sessions.get(sessionid)?.[0]();
+    });
+
+    chaserClientPreload.onMyturn((sessionid, info) => {
+        sessions.get(sessionid)?.[1](info);
+    });
+
+    chaserClientPreload.onTurnend((sessionid, info) => {
+        sessions.get(sessionid)?.[2](info);
+    });
+
+    /**
+     * @param {string} host
+     * @param {number} port
+     * @param {string} name
+     * @returns {Promise<Session | null>} 
+     */
+    return async (host, port, name) => {
+        const id = await chaserClientPreload.connect(host, port, name);
+        if (id == null) return null;
+        /** @type {Set<() => unknown>} */
+        const closeListeners = new Set();
+        /** @type {Set<(info: string) => unknown>} */
+        const turnListeners = new Set();
+        /** @type {0|1|2|3} */
+        let status = 0;
+        /** @type {string | null} */
+        let skinfo = null;
+        /** @type {((info: string | null) => void) | null} */
+        let presolver = null;
+        sessions.set(id, [() => {
+            sessions.delete(id);
+            status = 3;
+            presolver?.(null);
+            for (const listener of closeListeners) try {
+                listener();
+            } catch(e) {
+                console.error(e);
+            }
+        }, (info) => {
+            if (status === 3) return;
+            if (status === 2) {
+                skinfo = info;
+                return;
+            }
+            if (status === 1) throw new Error();
+            status = 1;
+            for (const listener of turnListeners) try {
+                listener(info);
+            } catch(e) {
+                console.error(e);
+            }
+        }, (info) => {
+            status = 0;
+            presolver?.(info);
+            if (skinfo) {
+                skinfo = null;
+                status = 1;
+                for (const listener of turnListeners) try {
+                    listener(info);
+                } catch(e) {
+                    console.error(e);
+                }
+            }
+        }]);
+        return {
+            close: () => {
+                if (status === 3) return;
+                sessions.delete(id);
+                status = 3;
+                presolver?.(null);
+                chaserClientPreload.close(id);
+            },
+            send: (command) => {
+                if (status !== 1) return Promise.resolve(null);
+                status = 2;
+                chaserClientPreload.send(id, command);
+                return new Promise(resolve => {
+                    presolver = resolve;
+                });
+            },
+            get isMyturn() { return status === 1; },
+            get isClosed() { return status === 3; },
+            onClose: (listener) => { closeListeners.add(listener); },
+            offClose: (listener) => { closeListeners.delete(listener); },
+            onMyturn: (listener) => { turnListeners.add(listener); },
+            offMyturn: (listener) => { turnListeners.delete(listener); },
+        };
+    };
+})();
+
+/** @type {Session | null} */
+let session = null;
+
+const resetSession = () => {
+    if (session) {
+        session.close();
+        session = null;
+    }
+};
 
 export class CHaser {
     getInfo () {
@@ -39,12 +172,12 @@ export class CHaser {
                     text: i18n('切断する', 'せつだんする'),
                 },
                 {
-                    opcode: 'is_connecting',
+                    opcode: 'isconnecting',
                     blockType: BlockType.BOOLEAN,
                     text: i18n('接続されている', 'せつぞくされている'),
                 },
                 {
-                    opcode: 'is_myturn',
+                    opcode: 'ismyturn',
                     blockType: BlockType.BOOLEAN,
                     text: i18n('自分のターン', 'じぶんのターン'),
                 },
@@ -164,5 +297,70 @@ export class CHaser {
                 },
             }
         };
+    }
+
+    /**
+     * @param {{
+     *   HOST?: unknown,
+     *   PORT?: unknown,
+     *   NAME?: unknown,
+     * }} args
+     * @returns {Promise<void>}
+     */
+    async connect(args) {
+        const host = Cast.toString(args.HOST);
+        const port = Cast.toNumber(args.PORT);
+        const name = Cast.toString(args.NAME);
+        resetSession();
+        const tsession = await createCHaserSession(host, port, name);
+        if (tsession) {
+            resetSession();
+            session = tsession;
+            tsession.onClose(() => {
+                if (session === tsession) session = null;
+            });
+        }
+    }
+
+    /** @returns {void} */
+    close() {
+        resetSession();
+    }
+    
+    /** @returns {boolean} */
+    isconnecting() {
+        return session != null;
+    }
+
+    /** @returns {boolean} */
+    ismyturn() {
+        return session?.isMyturn ?? false;
+    }
+
+    /**
+     * @param {{
+     *   DIR?: unknown,
+     * }} args
+     * @returns {Promise<void> | void}
+     */
+    walk(args) {
+        if (!session) return;
+        const tsession = session;
+        const dir = Cast.toString(args.DIR);
+        return new Promise(resolve => {
+            if (tsession.isMyturn) {
+                tsession.send(`w${dir}`).then(() => resolve());
+                return;
+            }
+            const onclose = () => resolve();
+            const onmyturn = ()=> {
+                if (!tsession.isMyturn) return;
+                tsession.offClose(onclose);
+                tsession.offMyturn(onmyturn);
+                tsession.send(`w${dir}`).then(() => resolve());
+            };
+            tsession.onClose(onclose);
+            tsession.onMyturn(onmyturn);
+        });
     }
 }
