@@ -28,7 +28,7 @@ const defaultBuiltinExtensions = {
     // tw: core extension
     tw: () => require('../extensions/tw'),
 
-    chaser: () => require('../extensions/chaser').CHaser,
+    chaserp: () => require('../extensions/chaser').CHaser,
 };
 
 /**

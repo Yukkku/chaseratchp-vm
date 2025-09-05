@@ -172,7 +172,7 @@ export class CHaser {
             };
         })();
         return {
-            id: 'chaser',
+            id: 'chaserp',
             name: 'CHaser',
             docsURI: '',
             blocks: [
