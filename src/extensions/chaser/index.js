@@ -89,12 +89,16 @@ const createCHaserSession = (() => {
                 console.error(e);
             }
         }, async (info) => {
+            if (status === 3) return;
+            if (status !== 2) throw new Error();
             status = 0;
             presolver?.(info);
             if (skinfo) {
                 const xinfo = skinfo;
                 skinfo = null;
                 queueMicrotask(() => {
+                    if (status === 3) return;
+                    if (status !== 0) throw new Error();
                     status = 1;
                     for (const listener of turnListeners) try {
                         listener(xinfo);
@@ -131,9 +135,15 @@ const createCHaserSession = (() => {
 })();
 
 const session = Symbol('CHaser:session');
+const stdinfo = Symbol('CHaser:stdinfo');
+const superinfo = Symbol('CHaser:superinfo');
 
 /**
- * @typedef {{ [session]?: Session | null }} Target
+ * @typedef {{
+ *   [session]?: Session | null,
+ *   [stdinfo]?: string | null,
+ *   [superinfo]?: string | null,
+ * }} Target
  * @typedef {{ target: Target }} Util
  */
 
@@ -142,6 +152,8 @@ export const resetSession = (target) => {
     if (target[session]) {
         target[session].close();
         target[session] = null;
+        target[stdinfo] = null;
+        target[superinfo] = null;
     }
 };
 
@@ -255,7 +267,7 @@ export class CHaser {
                     },
                 },
                 {
-                    opcode: 'check_com',
+                    opcode: 'checkC',
                     blockType: BlockType.BOOLEAN,
                     text: i18n('[IDX] 番目のマスに [COND]', '[IDX] ばんめのマスに [COND]'),
                     arguments: {
@@ -326,6 +338,9 @@ export class CHaser {
         if (tsession) {
             resetSession(target);
             target[session] = tsession;
+            tsession.onMyturn((info) => {
+                target[stdinfo] = info;
+            });
             tsession.onClose(() => {
                 if (target[session] === tsession) target[session] = null;
             });
@@ -362,14 +377,23 @@ export class CHaser {
     /**
      * @param {string} command
      * @param {Target} target
+     * @param {boolean} issuper
      * @returns {Promise<void> | void}
      */
-    sendCommand(command, target) {
+    sendCommand(command, target, issuper) {
         const tsession = target[session];
         if (!tsession) return;
         return new Promise(resolve => {
+            const send = () => {
+                tsession.send(command).then((info) => {
+                    resolve();
+                    if (target[session] === tsession && !tsession.isMyturn) {
+                        target[issuper ? superinfo : stdinfo] = info;
+                    }
+                });
+            };
             if (tsession.isMyturn) {
-                tsession.send(command).then(() => resolve());
+                send();
                 return;
             }
             const onclose = () => resolve();
@@ -377,7 +401,7 @@ export class CHaser {
                 if (!tsession.isMyturn) return;
                 tsession.offClose(onclose);
                 tsession.offMyturn(onmyturn);
-                tsession.send(command).then(() => resolve());
+                send();
             };
             tsession.onClose(onclose);
             tsession.onMyturn(onmyturn);
@@ -390,7 +414,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     walk(args, util) {
-        return this.sendCommand(`w${Cast.toString(args.DIR)}`, util.target);
+        return this.sendCommand(`w${Cast.toString(args.DIR)}`, util.target, false);
     }
 
     /**
@@ -399,7 +423,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     put(args, util) {
-        return this.sendCommand(`p${Cast.toString(args.DIR)}`, util.target);
+        return this.sendCommand(`p${Cast.toString(args.DIR)}`, util.target, false);
     }
 
     /**
@@ -408,7 +432,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     search(args, util) {
-        return this.sendCommand(`s${Cast.toString(args.DIR)}`, util.target);
+        return this.sendCommand(`s${Cast.toString(args.DIR)}`, util.target, true);
     }
 
     /**
@@ -417,6 +441,36 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     look(args, util) {
-        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target);
+        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target, true);
+    }
+
+    /**
+     * @param {{ DIR?: unknown, COND?: unknown }} args
+     * @param {Util} util
+     * @returns {boolean}
+     */
+    check(args, util) {
+        const dir = Cast.toListIndex(args.DIR, 9, false);
+        const cond = Cast.toString(args.COND);
+        if (dir === Cast.LIST_INVALID) {
+            return false;
+        } else {
+            return util.target[stdinfo]?.[dir] === cond;
+        }
+    }
+
+    /**
+     * @param {{ IDX?: unknown, COND?: unknown }} args
+     * @param {Util} util
+     * @returns {boolean}
+     */
+    checkC(args, util) {
+        const dir = Cast.toListIndex(args.IDX, 9, false);
+        const cond = Cast.toString(args.COND);
+        if (dir === Cast.LIST_INVALID) {
+            return false;
+        } else {
+            return util.target[superinfo]?.[dir] === cond;
+        }
     }
 }
