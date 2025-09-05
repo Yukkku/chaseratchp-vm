@@ -88,17 +88,20 @@ const createCHaserSession = (() => {
             } catch(e) {
                 console.error(e);
             }
-        }, (info) => {
+        }, async (info) => {
             status = 0;
             presolver?.(info);
             if (skinfo) {
+                const xinfo = skinfo;
                 skinfo = null;
-                status = 1;
-                for (const listener of turnListeners) try {
-                    listener(info);
-                } catch(e) {
-                    console.error(e);
-                }
+                queueMicrotask(() => {
+                    status = 1;
+                    for (const listener of turnListeners) try {
+                        listener(xinfo);
+                    } catch(e) {
+                        console.error(e);
+                    }
+                });
             }
         }]);
         return {
