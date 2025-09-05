@@ -127,13 +127,18 @@ const createCHaserSession = (() => {
     };
 })();
 
-/** @type {Session | null} */
-let session = null;
+const session = Symbol('CHaser:session');
 
-const resetSession = () => {
-    if (session) {
-        session.close();
-        session = null;
+/**
+ * @typedef {{ [session]?: Session | null }} Target
+ * @typedef {{ target: Target }} Util
+ */
+
+/** @param {Target} target */
+const resetSession = (target) => {
+    if (target[session]) {
+        target[session].close();
+        target[session] = null;
     }
 };
 
@@ -305,45 +310,60 @@ export class CHaser {
      *   PORT?: unknown,
      *   NAME?: unknown,
      * }} args
+     * @param {Util} util
      * @returns {Promise<void>}
      */
-    async connect(args) {
+    async connect(args, util) {
         const host = Cast.toString(args.HOST);
         const port = Cast.toNumber(args.PORT);
         const name = Cast.toString(args.NAME);
-        resetSession();
+        const target = util.target;
+        resetSession(target);
         const tsession = await createCHaserSession(host, port, name);
         if (tsession) {
-            resetSession();
-            session = tsession;
+            resetSession(target);
+            target[session] = tsession;
             tsession.onClose(() => {
-                if (session === tsession) session = null;
+                if (target[session] === tsession) target[session] = null;
             });
         }
     }
 
-    /** @returns {void} */
-    close() {
-        resetSession();
-    }
-    
-    /** @returns {boolean} */
-    isconnecting() {
-        return session != null;
-    }
-
-    /** @returns {boolean} */
-    ismyturn() {
-        return session?.isMyturn ?? false;
+    /**
+     * @param {unknown} _args
+     * @param {Util} util
+     * @returns {void}
+     */
+    close(_args, util) {
+        resetSession(util.target);
     }
 
     /**
-     * @param {string} command 
+     * @param {unknown} _args
+     * @param {Util} util
+     * @returns {boolean}
+     */
+    isconnecting(_args, util) {
+        return util.target[session] != null;
+    }
+
+    /**
+     * @param {unknown} _args
+     * @param {Util} util
+     * @returns {boolean}
+     */
+    ismyturn(_args, util) {
+        return util.target[session]?.isMyturn ?? false;
+    }
+
+    /**
+     * @param {string} command
+     * @param {Target} target
      * @returns {Promise<void> | void}
      */
-    sendCommand(command) {
-        if (!session) return;
-        const tsession = session;
+    sendCommand(command, target) {
+        const tsession = target[session];
+        if (!tsession) return;
         return new Promise(resolve => {
             if (tsession.isMyturn) {
                 tsession.send(command).then(() => resolve());
@@ -363,33 +383,37 @@ export class CHaser {
 
     /**
      * @param {{ DIR?: unknown }} args
+     * @param {Util} util
      * @returns {Promise<void> | void}
      */
-    walk(args) {
-        return this.sendCommand(`w${Cast.toString(args.DIR)}`);
+    walk(args, util) {
+        return this.sendCommand(`w${Cast.toString(args.DIR)}`, util.target);
     }
 
     /**
      * @param {{ DIR?: unknown }} args
+     * @param {Util} util
      * @returns {Promise<void> | void}
      */
-    put(args) {
-        return this.sendCommand(`p${Cast.toString(args.DIR)}`);
+    put(args, util) {
+        return this.sendCommand(`p${Cast.toString(args.DIR)}`, util.target);
     }
 
     /**
      * @param {{ DIR?: unknown }} args
+     * @param {Util} util
      * @returns {Promise<void> | void}
      */
-    search(args) {
-        return this.sendCommand(`s${Cast.toString(args.DIR)}`);
+    search(args, util) {
+        return this.sendCommand(`s${Cast.toString(args.DIR)}`, util.target);
     }
 
     /**
      * @param {{ DIR?: unknown }} args
+     * @param {Util} util
      * @returns {Promise<void> | void}
      */
-    look(args) {
-        return this.sendCommand(`l${Cast.toString(args.DIR)}`);
+    look(args, util) {
+        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target);
     }
 }
