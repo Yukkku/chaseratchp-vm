@@ -1,3 +1,5 @@
+// @ts-check
+
 import BlockType from '../../extension-support/block-type';
 import ArgumentType from '../../extension-support/argument-type';
 import formatMessage from 'format-message';
@@ -6,7 +8,12 @@ export class CHaser {
     getInfo () {
         const i18n = (() => {
             const loc = formatMessage.setup().locale;
-            return (ja, hira, en) => {
+            /**
+             * @param {string} ja
+             * @param {string} hira
+             * @returns {string}
+             */
+            return (ja, hira) => {
                 if (loc === 'ja-Hira') return hira;
                 return ja;
             };
