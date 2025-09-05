@@ -135,7 +135,7 @@ const session = Symbol('CHaser:session');
  */
 
 /** @param {Target} target */
-const resetSession = (target) => {
+export const resetSession = (target) => {
     if (target[session]) {
         target[session].close();
         target[session] = null;

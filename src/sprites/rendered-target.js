@@ -4,6 +4,7 @@ const Cast = require('../util/cast');
 const Clone = require('../util/clone');
 const Target = require('../engine/target');
 const StageLayering = require('../engine/stage-layering');
+const { resetSession: resetChaserSession } = require('../extensions/chaser');
 
 /**
  * Rendered target: instance of a sprite (clone), or the stage.
@@ -1022,6 +1023,7 @@ class RenderedTarget extends Target {
      */
     onStopAll () {
         this.clearEffects();
+        resetChaserSession(this);
     }
 
     /**
@@ -1111,6 +1113,7 @@ class RenderedTarget extends Target {
         this.runtime.stopForTarget(this);
         this.runtime.removeExecutable(this);
         this.sprite.removeClone(this);
+        resetChaserSession(this);
         if (this.renderer && this.drawableID !== null) {
             this.renderer.destroyDrawable(this.drawableID, this.isStage ?
                 StageLayering.BACKGROUND_LAYER :
