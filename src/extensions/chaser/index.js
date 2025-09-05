@@ -338,18 +338,15 @@ export class CHaser {
     }
 
     /**
-     * @param {{
-     *   DIR?: unknown,
-     * }} args
+     * @param {string} command 
      * @returns {Promise<void> | void}
      */
-    walk(args) {
+    sendCommand(command) {
         if (!session) return;
         const tsession = session;
-        const dir = Cast.toString(args.DIR);
         return new Promise(resolve => {
             if (tsession.isMyturn) {
-                tsession.send(`w${dir}`).then(() => resolve());
+                tsession.send(command).then(() => resolve());
                 return;
             }
             const onclose = () => resolve();
@@ -357,10 +354,42 @@ export class CHaser {
                 if (!tsession.isMyturn) return;
                 tsession.offClose(onclose);
                 tsession.offMyturn(onmyturn);
-                tsession.send(`w${dir}`).then(() => resolve());
+                tsession.send(command).then(() => resolve());
             };
             tsession.onClose(onclose);
             tsession.onMyturn(onmyturn);
         });
+    }
+
+    /**
+     * @param {{ DIR?: unknown }} args
+     * @returns {Promise<void> | void}
+     */
+    walk(args) {
+        return this.sendCommand(`w${Cast.toString(args.DIR)}`);
+    }
+
+    /**
+     * @param {{ DIR?: unknown }} args
+     * @returns {Promise<void> | void}
+     */
+    put(args) {
+        return this.sendCommand(`p${Cast.toString(args.DIR)}`);
+    }
+
+    /**
+     * @param {{ DIR?: unknown }} args
+     * @returns {Promise<void> | void}
+     */
+    search(args) {
+        return this.sendCommand(`s${Cast.toString(args.DIR)}`);
+    }
+
+    /**
+     * @param {{ DIR?: unknown }} args
+     * @returns {Promise<void> | void}
+     */
+    look(args) {
+        return this.sendCommand(`l${Cast.toString(args.DIR)}`);
     }
 }
