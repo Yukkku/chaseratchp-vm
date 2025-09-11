@@ -194,11 +194,13 @@ export class CHaser {
                 {
                     opcode: 'isconnecting',
                     blockType: BlockType.BOOLEAN,
+                    disableMonitor: true,
                     text: i18n('接続されている', 'せつぞくされている'),
                 },
                 {
                     opcode: 'ismyturn',
                     blockType: BlockType.BOOLEAN,
+                    disableMonitor: true,
                     text: i18n('自分のターン', 'じぶんのターン'),
                 },
                 {
