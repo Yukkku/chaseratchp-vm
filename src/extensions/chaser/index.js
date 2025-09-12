@@ -453,12 +453,12 @@ export class CHaser {
     }
 
     /**
-     * @param {{ DIR?: unknown }} args
+     * @param {unknown} _args
      * @param {Util} util
      * @returns {Promise<void> | void}
      */
-    donothing(args, util) {
-        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target, null);
+    donothing(_args, util) {
+        return this.sendCommand('lu', util.target, null);
     }
 
     /**
