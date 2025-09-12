@@ -264,12 +264,12 @@ export class CHaser {
                         DIR: {
                             type: ArgumentType.STRING,
                             menu: 'dir8',
-                            defaultValue: 1,
+                            defaultValue: "1",
                         },
                         COND: {
                             type: ArgumentType.STRING,
                             menu: 'cellinfo',
-                            defaultValue: 1,
+                            defaultValue: "1",
                         },
                     },
                 },
@@ -280,12 +280,12 @@ export class CHaser {
                     arguments: {
                         IDX: {
                             type: ArgumentType.NUMBER,
-                            defaultValue: 1,
+                            defaultValue: "1",
                         },
                         COND: {
                             type: ArgumentType.STRING,
                             menu: 'cellinfo',
-                            defaultValue: 1,
+                            defaultValue: "1",
                         },
                     },
                 },
@@ -303,23 +303,23 @@ export class CHaser {
                 dir8: {
                     acceptReporters: false,
                     items: [
-                        {text: i18n('左上', 'ひだりうえ'), value: 1},
-                        {text: i18n('上', 'うえ'), value: 2},
-                        {text: i18n('右上', 'みぎうえ'), value: 3},
-                        {text: i18n('左', 'ひだり'), value: 4},
-                        {text: i18n('右', 'みぎ'), value: 6},
-                        {text: i18n('左下', 'ひだりした'), value: 7},
-                        {text: i18n('下', 'した'), value: 8},
-                        {text: i18n('右下', 'みぎした'), value: 9},
+                        {text: i18n('左上', 'ひだりうえ'), value: "1"},
+                        {text: i18n('上', 'うえ'), value: "2"},
+                        {text: i18n('右上', 'みぎうえ'), value: "3"},
+                        {text: i18n('左', 'ひだり'), value: "4"},
+                        {text: i18n('右', 'みぎ'), value: "6"},
+                        {text: i18n('左下', 'ひだりした'), value: "7"},
+                        {text: i18n('下', 'した'), value: "8"},
+                        {text: i18n('右下', 'みぎした'), value: "9"},
                     ]
                 },
                 cellinfo: {
                     acceptReporters: false,
                     items: [
-                        {text: i18n('何もない', 'なにもない'), value: 0},
-                        {text: i18n('相手がいる', 'あいてがいる'), value: 1},
-                        {text: i18n('ブロックがある', 'ブロックがある'), value: 2},
-                        {text: i18n('アイテムがある', 'アイテムがある'), value: 3},
+                        {text: i18n('何もない', 'なにもない'), value: "0"},
+                        {text: i18n('相手がいる', 'あいてがいる'), value: "1"},
+                        {text: i18n('ブロックがある', 'ブロックがある'), value: "2"},
+                        {text: i18n('アイテムがある', 'アイテムがある'), value: "3"},
                     ]
                 },
             }
