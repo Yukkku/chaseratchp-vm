@@ -341,7 +341,7 @@ export class CHaser {
         const name = Cast.toString(args.NAME);
         const target = util.target;
         resetSession(target);
-        const tsession = await createCHaserSession(host, port, name);
+        const tsession = await createCHaserSession(host, port, name || ' ');
         if (tsession) {
             resetSession(target);
             target[session] = tsession;
