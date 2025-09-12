@@ -228,9 +228,9 @@ export class CHaser {
                     },
                 },
                 {
-                    opcode: 'search',
+                    opcode: 'look',
                     blockType: BlockType.COMMAND,
-                    text: i18n('[DIR] を調べる', '[DIR] をしらべる'),
+                    text: i18n('[DIR] を見る', '[DIR] をみる'),
                     arguments: {
                         DIR: {
                             type: ArgumentType.STRING,
@@ -240,9 +240,9 @@ export class CHaser {
                     },
                 },
                 {
-                    opcode: 'look',
+                    opcode: 'search',
                     blockType: BlockType.COMMAND,
-                    text: i18n('[DIR] を見る', '[DIR] をみる'),
+                    text: i18n('[DIR] を調べる', '[DIR] をしらべる'),
                     arguments: {
                         DIR: {
                             type: ArgumentType.STRING,
