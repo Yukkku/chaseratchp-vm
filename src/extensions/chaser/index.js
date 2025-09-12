@@ -458,7 +458,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     donothing(_args, util) {
-        return this.sendCommand('lu', util.target, null);
+        return this.sendCommand('lun', util.target, null);
     }
 
     /**
