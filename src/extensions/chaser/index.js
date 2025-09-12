@@ -252,6 +252,11 @@ export class CHaser {
                     },
                 },
                 {
+                    opcode: 'donothing',
+                    blockType: BlockType.COMMAND,
+                    text: i18n('何もしない', 'なにもしない'),
+                },
+                {
                     opcode: 'check',
                     blockType: BlockType.BOOLEAN,
                     text: '[DIR] に [COND]',
@@ -379,10 +384,10 @@ export class CHaser {
     /**
      * @param {string} command
      * @param {Target} target
-     * @param {boolean} issuper
+     * @param {'act' | 'info' | null} mode
      * @returns {Promise<void> | void}
      */
-    sendCommand(command, target, issuper) {
+    sendCommand(command, target, mode) {
         const tsession = target[session];
         if (!tsession) return;
         return new Promise(resolve => {
@@ -390,7 +395,8 @@ export class CHaser {
                 tsession.send(command).then((info) => {
                     resolve();
                     if (target[session] === tsession && !tsession.isMyturn) {
-                        target[issuper ? superinfo : stdinfo] = info;
+                        if (mode === 'act') target[stdinfo] = info;
+                        if (mode === 'info') target[superinfo] = info;
                     }
                 });
             };
@@ -416,7 +422,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     walk(args, util) {
-        return this.sendCommand(`w${Cast.toString(args.DIR)}`, util.target, false);
+        return this.sendCommand(`w${Cast.toString(args.DIR)}`, util.target, 'act');
     }
 
     /**
@@ -425,7 +431,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     put(args, util) {
-        return this.sendCommand(`p${Cast.toString(args.DIR)}`, util.target, false);
+        return this.sendCommand(`p${Cast.toString(args.DIR)}`, util.target, 'act');
     }
 
     /**
@@ -434,7 +440,7 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     search(args, util) {
-        return this.sendCommand(`s${Cast.toString(args.DIR)}`, util.target, true);
+        return this.sendCommand(`s${Cast.toString(args.DIR)}`, util.target, 'info');
     }
 
     /**
@@ -443,7 +449,16 @@ export class CHaser {
      * @returns {Promise<void> | void}
      */
     look(args, util) {
-        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target, true);
+        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target, 'info');
+    }
+
+    /**
+     * @param {{ DIR?: unknown }} args
+     * @param {Util} util
+     * @returns {Promise<void> | void}
+     */
+    donothing(args, util) {
+        return this.sendCommand(`l${Cast.toString(args.DIR)}`, util.target, null);
     }
 
     /**
